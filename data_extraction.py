@@ -3,12 +3,12 @@ import re
 import datetime
 
 
-def time_dif(start, end):
+def time_dif(start, end, inc=0):
     start = datetime.datetime.strptime(start, '%H:%M:%S.%f')
     end = datetime.datetime.strptime(end, '%H:%M:%S.%f')
     delta = end - start
     seconds = delta.total_seconds()
-    return float(seconds)
+    return float(seconds) + inc
 
 
 def make_data(name, fn):
@@ -40,10 +40,17 @@ def make_data(name, fn):
             start = 1
         timestamps = timestamps[start::2]
 
-        # find time used on each move TODO: account for incremenent
+        # find time used on each move
+        time_control = re.findall('TimeControl\s\"(.+)\"', game)[0]
+        plus = time_control.find('+')
+        if plus == -1:
+            inc = 0
+        else:
+            inc = int(time_control[plus:])
+        
         timedifs = []
         for moveidx in (range(len(timestamps) - 1)):
-            timedifs.append(time_dif(timestamps[moveidx+1], timestamps[moveidx]))
+            timedifs.append(time_dif(timestamps[moveidx+1], timestamps[moveidx], inc=inc))
 
         # save the data
         game_data.append(timedifs)
@@ -56,5 +63,3 @@ def combine_games(game_data):
     for game in game_data:
         combined_list += game
     return combined_list
-
-game_data = make_data('NateSolon', 'chess_com_games_2018-11-26.pgn')
